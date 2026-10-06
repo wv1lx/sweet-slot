@@ -1,21 +1,19 @@
 import { Application } from 'pixi.js';
 
-class Game {
+export class Game {
     public app: Application;
 
     constructor() {
         this.app = new Application();
     }
 
-    public async init(container: HTMLElement): Promise<void> {
+    public async init(container: HTMLElement) {
         await this.app.init({
-            width: 1280,
-            height: 720,
-            backgroundColor: 0x1a1a2e,
-            resolution: window.devicePixelRatio || 1,
-            autoDensity: true,
+            resizeTo: window,
+            resolution: window.devicePixelRatio || 1, 
+            autoDensity: true,                        
+            backgroundColor: 0x000000,
         });
-
         container.appendChild(this.app.canvas);
     }
 

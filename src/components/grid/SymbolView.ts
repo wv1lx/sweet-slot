@@ -1,35 +1,43 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
+import { SymbolTextureMap } from '../../core/AssetLoader';
 import { GameConfig } from '../../config/GameConfig';
 
+// Индивидуальные настройки масштаба для каждого символа по осям { x, y }
+const SymbolScaleMap: Record<number, { x: number, y: number }> = {
+    9: { x: 1.73, y: 1.0 }, // Синяя рыба: увеличить по X
+    3: { x: 0.95, y: 1.0 }, // jellyfish
+    4: { x: 1.0, y: 1.0 }, // Черепаха: увеличить по X
+    5: { x: 0.95, y: 1.0 }, // Морской конек: уменьшить по Y
+    6: { x: 1.0, y: 0.85 }, // Краб: уменьшить по Y
+    7: { x: 0.9, y: 0.9 },   // Уменьшаем медузу на 20%
+   
+};
+
 export class SymbolView extends Container {
-    private bg: Graphics;
-    private symbolText: Text;
-    public readonly symbolId: number; // 1. Явно объявляем свойство здесь
+    private sprite: Sprite;
+    public symbolId: number;
 
-    constructor(symbolId: number) { // 2. Убираем модификаторы доступа из аргументов
+    constructor(symbolId: number) {
         super();
-        this.symbolId = symbolId; // 3. Присваиваем значение
-        
-        const size = GameConfig.grid.symbolSize;
+        this.symbolId = symbolId;
 
-        this.bg = new Graphics()
-            .rect(0, 0, size, size)
-            .fill({ color: this.getColorById(symbolId), alpha: 0.8 });
+        const textureName = SymbolTextureMap[symbolId];
+        this.sprite = new Sprite(Texture.from(textureName));
         
-        this.symbolText = new Text({
-            text: symbolId.toString(),
-            style: { fontFamily: 'Arial', fontSize: 36, fill: 0xffffff, fontWeight: 'bold' }
-        });
+        const { symbolSize } = GameConfig.grid;
         
-        this.symbolText.anchor.set(0.5);
-        this.symbolText.x = size / 2;
-        this.symbolText.y = size / 2;
+        this.sprite.width = symbolSize;
+        this.sprite.height = symbolSize;
+        
+        // Применяем искажение пропорций
+        const customScale = SymbolScaleMap[symbolId] || { x: 1, y: 1 };
+        this.sprite.scale.x *= customScale.x;
+        this.sprite.scale.y *= customScale.y;
+        
+        this.sprite.anchor.set(0.5);
+        this.sprite.x = symbolSize / 2;
+        this.sprite.y = symbolSize / 2;
 
-        this.addChild(this.bg, this.symbolText);
-    }
-
-    private getColorById(id: number): number {
-        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xff8800, 0x8800ff, 0x00ff88, 0xffffff];
-        return colors[id % colors.length];
+        this.addChild(this.sprite);
     }
 }

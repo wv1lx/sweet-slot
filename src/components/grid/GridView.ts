@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { SymbolView } from './SymbolView';
 import { GameConfig } from '../../config/GameConfig';
 import type { WinResult } from '../../logic/MatchLogic';
@@ -6,16 +6,31 @@ import gsap from 'gsap';
 
 export class GridView extends Container {
     private symbols: SymbolView[][] = [];
+    private symbolsContainer: Container;
 
     constructor() {
         super();
+
+        this.symbolsContainer = new Container();
+        this.addChild(this.symbolsContainer);
+
+        const { columns, rows, symbolSize, padding } = GameConfig.grid;
+        const gridWidth = columns * symbolSize + (columns - 1) * padding;
+        const gridHeight = rows * symbolSize + (rows - 1) * padding;
+
+        const mask = new Graphics()
+            .rect(0, 0, gridWidth, gridHeight)
+            .fill(0xffffff); 
+        
+        this.addChild(mask);
+        this.symbolsContainer.mask = mask;
     }
 
     public async renderGrid(gridData: number[][]): Promise<void> {
-        this.removeChildren();
+        this.symbolsContainer.removeChildren();
         this.symbols = [];
 
-        const { symbolSize, padding } = GameConfig.grid;
+        const { symbolSize, padding, rows } = GameConfig.grid;
         const dropPromises: Promise<void>[] = [];
 
         for (let col = 0; col < gridData.length; col++) {
@@ -30,15 +45,17 @@ export class GridView extends Container {
                 symbolView.x = targetX;
                 symbolView.y = targetY - 600; 
                 
-                this.addChild(symbolView);
+                this.symbolsContainer.addChild(symbolView);
                 columnView.push(symbolView);
+
+                const invertedRow = rows - 1 - row;
 
                 const promise = new Promise<void>((resolve) => {
                     gsap.to(symbolView, {
                         y: targetY,
-                        duration: 1.3,
-                        ease: 'elastic.out(1, 0.4)',
-                        delay: col * 0.08 + row * 0.04,
+                        duration: 1.3, 
+                        ease: 'elastic.out(1, 0.4)', 
+                        delay: col * 0.08 + invertedRow * 0.06, 
                         onComplete: resolve
                     });
                 });
@@ -51,46 +68,39 @@ export class GridView extends Container {
         await Promise.all(dropPromises);
     }
 
-    // Новый метод для анимации каскадов
     public async playCascades(wins: WinResult[], nextGridData: number[][]): Promise<void> {
         const explodePromises: Promise<void>[] = [];
 
-        // 1. Анимируем "взрыв" выигрышных символов
         wins.forEach(win => {
             win.positions.forEach(pos => {
                 const symView = this.symbols[pos.col][pos.row];
                 if (symView) {
                     const p = new Promise<void>(resolve => {
-                        // Уменьшаем масштаб до 0
                         gsap.to(symView.scale, { 
                             x: 0, 
                             y: 0, 
                             duration: 0.3, 
                             ease: 'back.in(2)', 
                             onComplete: () => {
-                                symView.destroy(); // Удаляем объект из памяти Pixi
+                                symView.destroy();
                                 resolve();
                             }
                         });
                     });
                     explodePromises.push(p);
-                    // Помечаем ячейку как пустую
                     this.symbols[pos.col][pos.row] = null as any; 
                 }
             });
         });
 
-        // Ждем окончания всех взрывов
         await Promise.all(explodePromises);
 
-        const { symbolSize, padding } = GameConfig.grid;
+        const { symbolSize, padding, rows } = GameConfig.grid;
         const dropPromises: Promise<void>[] = [];
         const newSymbolsArray: SymbolView[][] = [];
 
-        // 2. Сдвигаем старые символы вниз и генерируем новые сверху
         for (let col = 0; col < nextGridData.length; col++) {
             const newColView: SymbolView[] = [];
-            // Фильтруем удаленные символы (оставляем только "живые")
             const oldColRemaining = this.symbols[col].filter(s => s !== null);
 
             for (let row = 0; row < nextGridData[col].length; row++) {
@@ -98,30 +108,32 @@ export class GridView extends Container {
                 const targetX = col * (symbolSize + padding);
                 const targetY = row * (symbolSize + padding);
 
-                // Количество новых символов в колонке
                 const newCount = nextGridData[col].length - oldColRemaining.length;
                 let symView: SymbolView;
 
                 if (row < newCount) {
-                    // Создаем новый падающий символ
                     symView = new SymbolView(symbolId);
                     symView.x = targetX;
-                    symView.y = targetY - 600 - (newCount - row) * 100;
-                    this.addChild(symView);
+                    symView.y = -(newCount - row) * (symbolSize + padding);
+                    this.symbolsContainer.addChild(symView);
                 } else {
-                    // Берем существующий символ, который избежал взрыва
                     symView = oldColRemaining[row - newCount];
                 }
 
                 newColView.push(symView);
 
-                // Запускаем падение до новой целевой позиции Y
                 if (symView.y !== targetY) {
+                    const invertedRow = rows - 1 - row;
+                    
+                    const distance = Math.abs(targetY - symView.y);
+                    const duration = Math.max(0.4, distance * 0.0008); 
+
                     const p = new Promise<void>(resolve => {
                         gsap.to(symView, { 
                             y: targetY, 
-                            duration: 0.4, 
-                            ease: 'bounce.out', 
+                            duration: duration, 
+                            delay: invertedRow * 0.05, 
+                            ease: 'elastic.out(1, 0.4)', 
                             onComplete: resolve 
                         });
                     });
@@ -131,10 +143,7 @@ export class GridView extends Container {
             newSymbolsArray.push(newColView);
         }
 
-        // Обновляем матрицу визуальных символов
         this.symbols = newSymbolsArray;
-        
-        // Ждем, пока упадут все новые и сдвинутые символы
         await Promise.all(dropPromises);
     }
 }
