@@ -146,4 +146,18 @@ export class GridView extends Container {
         this.symbols = newSymbolsArray;
         await Promise.all(dropPromises);
     }
+
+    // --- НОВЫЙ МЕТОД ДЛЯ ПОДСЧЕТА МНОЖИТЕЛЕЙ ---
+    public getActiveMultipliers(): number {
+        let totalMulti = 0;
+        for (let col = 0; col < this.symbols.length; col++) {
+            for (let row = 0; row < this.symbols[col].length; row++) {
+                const symView = this.symbols[col][row];
+                if (symView && symView.symbolId === GameConfig.multiplierId) {
+                    totalMulti += symView.multiValue;
+                }
+            }
+        }
+        return totalMulti;
+    }
 }

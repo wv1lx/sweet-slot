@@ -1,33 +1,38 @@
+import { GameConfig } from '../config/GameConfig';
+
 export interface WinResult {
     symbolId: number;
+    positions: { col: number, row: number }[];
     count: number;
-    positions: { col: number; row: number }[];
 }
 
 export class MatchLogic {
     public static findWins(grid: number[][]): WinResult[] {
-        const symbolMap = new Map<number, { col: number; row: number }[]>();
+        const counts: Record<number, { col: number, row: number }[]> = {};
 
         for (let col = 0; col < grid.length; col++) {
             for (let row = 0; row < grid[col].length; row++) {
-                const sym = grid[col][row];
-                if (!symbolMap.has(sym)) {
-                    symbolMap.set(sym, []);
+                const id = grid[col][row];
+                
+                if (id === GameConfig.scatterId || id === GameConfig.multiplierId) {
+                    continue; 
                 }
-                symbolMap.get(sym)!.push({ col, row });
+
+                if (!counts[id]) counts[id] = [];
+                counts[id].push({ col, row });
             }
         }
 
         const wins: WinResult[] = [];
-        
-        symbolMap.forEach((positions, symbolId) => {
-            if (symbolId !== 10 && symbolId !== 11 && positions.length >= 8) {
-                wins.push({ symbolId, count: positions.length, positions });
+        for (const id in counts) {
+            if (counts[id].length >= 8) { 
+                wins.push({
+                    symbolId: parseInt(id),
+                    positions: counts[id],
+                    count: counts[id].length
+                });
             }
-            if (symbolId === 10 && positions.length >= 4) {
-                wins.push({ symbolId, count: positions.length, positions });
-            }
-        });
+        }
 
         return wins;
     }

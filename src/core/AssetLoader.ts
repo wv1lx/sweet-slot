@@ -12,8 +12,8 @@ export const SymbolTextureMap: Record<number, string> = {
     7: 'stingray',
     8: 'crab',
     9: 'fish_blue',
-    10: 'scatter_gold', // Наш Скаттер
-    11: 'chest_multi'   // Будущий множитель
+    10: 'scatter_gold', // Скаттер
+    11: 'chest_multi'   // Множитель
 };
 
 export class AssetLoader {
@@ -26,7 +26,18 @@ export class AssetLoader {
             Assets.add({ alias: name, src: `/assets/symbols/${name}.png` });
         });
 
-        const aliasesToLoad = ['bg', 'frame', ...Object.values(SymbolTextureMap)];
+        // Загружаем минималистичные кнопки интерфейса из корня assets
+        const uiButtons = ['spin', 'plus', 'minus', 'auto', 'info', 'settings'];
+        uiButtons.forEach(name => {
+            Assets.add({ alias: name, src: `/assets/${name}.png` });
+        });
+
+        const aliasesToLoad = [
+            'bg', 
+            'frame', 
+            ...Object.values(SymbolTextureMap),
+            ...uiButtons
+        ];
         await Assets.load(aliasesToLoad);
     }
 }
