@@ -18,36 +18,28 @@ export const SymbolTextureMap: Record<number, string> = {
 export class AssetLoader {
     public static async loadAll() {
         Assets.add({ alias: 'bg', src: '/assets/bg.jpg' });
+        Assets.add({ alias: 'bg_bonus', src: '/assets/bg_bonus.jpg' }); // Новый фон сокровищницы
         Assets.add({ alias: 'frame', src: '/assets/frame.png' });
-
-        // Укажите точное расширение вашего файла (.png или .jpg)
         Assets.add({ alias: 'frame_bs', src: '/assets/frame_bs.png' });
 
-        // Символы
         Object.values(SymbolTextureMap).forEach(name => {
             Assets.add({ alias: name, src: `/assets/symbols/${name}.png` });
         });
 
-        // Кнопки интерфейса
         const uiButtons = ['spin', 'plus', 'minus', 'auto', 'info', 'settings'];
         uiButtons.forEach(name => {
             Assets.add({ alias: name, src: `/assets/${name}.png` });
         });
 
-        // Обязательно добавляем 'frame_bs' в список загрузки:
         const aliasesToLoad = [
             'bg', 
+            'bg_bonus',
             'frame', 
             'frame_bs',
             ...Object.values(SymbolTextureMap),
             ...uiButtons
         ];
 
-        try {
-            await Assets.load(aliasesToLoad);
-            console.log('✅ Все ресурсы успешно загружены в кэш');
-        } catch (error) {
-            console.error('❌ Ошибка при загрузке ассетов:', error);
-        }
+        await Assets.load(aliasesToLoad);
     }
 }
