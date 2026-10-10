@@ -1,6 +1,5 @@
 import { Assets } from 'pixi.js';
 
-// Связываем ID символов с точными названиями твоих файлов
 export const SymbolTextureMap: Record<number, string> = {
     0: 'fish_orange',
     1: 'turtle',
@@ -12,8 +11,8 @@ export const SymbolTextureMap: Record<number, string> = {
     7: 'stingray',
     8: 'crab',
     9: 'fish_blue',
-    10: 'scatter_gold', // Скаттер
-    11: 'chest_multi'   // Множитель
+    10: 'scatter_gold',
+    11: 'chest_multi'
 };
 
 export class AssetLoader {
@@ -21,23 +20,34 @@ export class AssetLoader {
         Assets.add({ alias: 'bg', src: '/assets/bg.jpg' });
         Assets.add({ alias: 'frame', src: '/assets/frame.png' });
 
-        // Автоматически загружаем все символы из папки symbols
+        // Укажите точное расширение вашего файла (.png или .jpg)
+        Assets.add({ alias: 'frame_bs', src: '/assets/frame_bs.png' });
+
+        // Символы
         Object.values(SymbolTextureMap).forEach(name => {
             Assets.add({ alias: name, src: `/assets/symbols/${name}.png` });
         });
 
-        // Загружаем минималистичные кнопки интерфейса из корня assets
+        // Кнопки интерфейса
         const uiButtons = ['spin', 'plus', 'minus', 'auto', 'info', 'settings'];
         uiButtons.forEach(name => {
             Assets.add({ alias: name, src: `/assets/${name}.png` });
         });
 
+        // Обязательно добавляем 'frame_bs' в список загрузки:
         const aliasesToLoad = [
             'bg', 
             'frame', 
+            'frame_bs',
             ...Object.values(SymbolTextureMap),
             ...uiButtons
         ];
-        await Assets.load(aliasesToLoad);
+
+        try {
+            await Assets.load(aliasesToLoad);
+            console.log('✅ Все ресурсы успешно загружены в кэш');
+        } catch (error) {
+            console.error('❌ Ошибка при загрузке ассетов:', error);
+        }
     }
 }
